@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISL Emotion Translator - Professional Edition</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Professional Header */
+        .header {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+        }
+        
+        .logo-text h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .logo-text p {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(96, 165, 250, 0.5);
+            box-shadow: 0 8px 24px rgba(96, 165, 250, 0.15);
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+        
+        /* Main Grid - Better proportions */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        /* Video Section */
+        .video-section {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .section-icon {
+            font-size: 1.5rem;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .video-frame {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        /* Text Display */
+        .text-display {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.25rem;
+            min-height: 80px;
+        }
+        
+        .current-word {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 0.75rem;
+            text-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
+        }
+        
+        .sentence {
+            font-size: 1.15rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+        
+        /* Control Buttons */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.25rem;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 0.9rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        /* Right Column */
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        /* Suggestions Panel */
+        .suggestions-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .suggestions-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .suggestion-item {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        
+        .suggestion-item:hover {
+            background: rgba(96, 165, 250, 0.15);
+            border-color: rgba(96, 165, 250, 0.5);
+            transform: translateX(4px);
+        }
+        
+        .suggestion-number {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: rgba(96, 165, 250, 0.2);
+            border-radius: 6px;
+            text-align: center;
+            line-height: 24px;
+            font-weight: 700;
+            color: #60a5fa;
+            margin-right: 0.75rem;
+            font-size: 0.85rem;
+        }
+        
+        /* Emotion Panel */
+        .emotion-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .emotion-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 12px;
+        }
+        
+        .emotion-label {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-transform: capitalize;
+            color: #e2e8f0;
+        }
+        
+        .emotion-icon {
+            font-size: 2.5rem;
+            animation: bounce 2s ease infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        
+        /* Emotion Bars */
+        .emotion-bars {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .emotion-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .emotion-bar-label {
+            width: 90px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #cbd5e1;
+        }
+        
+        .emotion-bar-container {
+            flex: 1;
+            height: 28px;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .emotion-bar-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Chart Panel */
+        .chart-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        #emotionChart {
+            height: 280px !important;
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-bar {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo-icon">🤟</div>
+                <div class="logo-text">
+                    <h1>ISL Emotion Translator</h1>
+                    <p>Real-time Sign Language Recognition with AI-Powered Emotion Detection</p>
+                </div>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>System Active</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-label">Frame Rate</div>
+                <div class="stat-value" id="fps">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Letters</div>
+                <div class="stat-value" id="letters">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Words</div>
+                <div class="stat-value" id="words">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Sentences</div>
+                <div class="stat-value" id="sentences">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Emotions</div>
+                <div class="stat-value" id="emotionChanges">0</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="video-section">
+                <div class="section-header">
+                    <span class="section-icon">📹</span>
+                    <h2 class="section-title">Live Camera Feed</h2>
+                </div>
+                
+                <div class="video-container">
+                    <img id="videoFrame" class="video-frame" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Video Feed">
+                </div>
+                
+                <div class="text-display">
+                    <div class="current-word" id="currentWord">Ready to start...</div>
+                    <div class="sentence" id="sentence"></div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-success" onclick="sendCommand('speak')">🔊 Speak</button>
+                    <button class="btn btn-primary" onclick="sendCommand('backspace')">⌫ Backspace</button>
+                    <button class="btn btn-danger" onclick="sendCommand('reset')">🔄 Reset</button>
+                </div>
+            </div>
+
+            <div class="right-column">
+                <div class="suggestions-panel">
+                    <div class="section-header">
+                        <span class="section-icon">💡</span>
+                        <h2 class="section-title">Smart Suggestions</h2>
+                    </div>
+                    <div class="suggestions-content" id="suggestions">
+                        <p style="color: #94a3b8; text-align: center; padding: 1rem;">Start typing to see suggestions...</p>
+                    </div>
+                </div>
+
+                <div class="emotion-panel">
+                    <div class="section-header">
+                        <span class="section-icon">😊</span>
+                        <h2 class="section-title">Emotion Detection</h2>
+                    </div>
+                    
+                    <div class="emotion-display">
+                        <span class="emotion-label" id="emotionLabel">Neutral</span>
+                        <span class="emotion-icon" id="emotionIcon">😐</span>
+                    </div>
+                    
+                    <div class="emotion-bars">
+                        <div class="emotion-bar">
+                            <div class="emotion-bar-label">😊 Happy</div>
+                            <div class="emotion-bar-container">
+                                <div class="emotion-bar-fill" id="bar-happy" style="width:0%;background:linear-gradient(90deg,#4ade80,#22c55e)">0%</div>
+                            </div>
+                        </div>
+                        <div class="emotion-bar">
+                            <div class="emotion-bar-label">😢 Sad</div>
+                            <div class="emotion-bar-container">
+                                <div class="emotion-bar-fill" id="bar-sad" style="width:0%;background:linear-gradient(90deg,#60a5fa,#3b82f6)">0%</div>
+                            </div>
+                        </div>
+                        <div class="emotion-bar">
+                            <div class="emotion-bar-label">😠 Angry</div>
+                            <div class="emotion-bar-container">
+                                <div class="emotion-bar-fill" id="bar-angry" style="width:0%;background:linear-gradient(90deg,#f87171,#ef4444)">0%</div>
+                            </div>
+                        </div>
+                        <div class="emotion-bar">
+                            <div class="emotion-bar-label">😲 Surprise</div>
+                            <div class="emotion-bar-container">
+                                <div class="emotion-bar-fill" id="bar-surprise" style="width:0%;background:linear-gradient(90deg,#fbbf24,#f59e0b)">0%</div>
+                            </div>
+                        </div>
+                        <div class="emotion-bar">
+                            <div class="emotion-bar-label">😐 Neutral</div>
+                            <div class="emotion-bar-container">
+                                <div class="emotion-bar-fill" id="bar-neutral" style="width:100%;background:linear-gradient(90deg,#a3a3a3,#737373)">100%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-panel">
+            <div class="section-header">
+                <span class="section-icon">📈</span>
+                <h2 class="section-title">Emotion Timeline</h2>
+            </div>
+            <canvas id="emotionChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 ISL Professional UI loaded');
+            
+            const emotions = ['happy', 'sad', 'angry', 'surprise', 'neutral'];
+            const socket = io('/isl');
+            
+            const emotionIcons = {
+                'happy': '😊',
+                'sad': '😢',
+                'angry': '😠',
+                'surprise': '😲',
+                'neutral': '😐'
+            };
+            
+            const emotionColors = {
+                'happy': ['#4ade80', '#22c55e'],
+                'sad': ['#60a5fa', '#3b82f6'],
+                'angry': ['#f87171', '#ef4444'],
+                'surprise': ['#fbbf24', '#f59e0b'],
+                'neutral': ['#a3a3a3', '#737373']
+            };
+
+            const ctx = document.getElementById('emotionChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {label: 'Happy', data: [], borderColor: '#4ade80', borderWidth: 2, tension: 0.4, fill: false},
+                        {label: 'Sad', data: [], borderColor: '#60a5fa', borderWidth: 2, tension: 0.4, fill: false},
+                        {label: 'Angry', data: [], borderColor: '#f87171', borderWidth: 2, tension: 0.4, fill: false},
+                        {label: 'Surprise', data: [], borderColor: '#fbbf24', borderWidth: 2, tension: 0.4, fill: false},
+                        {label: 'Neutral', data: [], borderColor: '#a3a3a3', borderWidth: 2, tension: 0.4, fill: false}
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#cbd5e1',
+                                font: { size: 12 }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true, 
+                            max: 1, 
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#94a3b8', 
+                                display: false
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.05)'
+                            }
+                        }
+                    },
+                    animation: false
+                }
+            });
+
+            socket.on('connect', () => {
+                console.log('✅ Connected');
+            });
+
+            socket.on('update', (data) => {
+                try {
+                    if (data.frame) {
+                        document.getElementById('videoFrame').src = 'data:image/jpeg;base64,' + data.frame;
+                    }
+                    
+                    document.getElementById('currentWord').textContent = data.current_word || 'Ready to start...';
+                    document.getElementById('sentence').textContent = data.sentence || '';
+
+                    if (data.stats) {
+                        document.getElementById('fps').textContent = Math.round(data.fps) || 0;
+                        document.getElementById('letters').textContent = data.stats.letters_detected || 0;
+                        document.getElementById('words').textContent = data.stats.words_formed || 0;
+                        document.getElementById('sentences').textContent = data.stats.sentences_formed || 0;
+                        document.getElementById('emotionChanges').textContent = data.stats.emotion_changes || 0;
+                    }
+
+                    if (data.suggestions) {
+                        updateSuggestions(data.suggestions);
+                    }
+
+                    if (data.emotion_scores) {
+                        updateEmotion(data.emotion || 'neutral', data.emotion_scores);
+                    }
+
+                    if (data.emotion_timeline && data.emotion_timeline.length > 0) {
+                        updateChart(data.emotion_timeline);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            });
+
+            function updateSuggestions(suggestions) {
+                const sugDiv = document.getElementById('suggestions');
+                
+                if (suggestions && suggestions.length > 0) {
+                    sugDiv.innerHTML = suggestions.map((word, idx) => 
+                        `<div class="suggestion-item" onclick="acceptSuggestion('${word}')">
+                            <span class="suggestion-number">${idx + 1}</span>${word}
+                        </div>`
+                    ).join('');
+                } else {
+                    sugDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 1rem;">Start typing to see suggestions...</p>';
+                }
+            }
+
+            function updateEmotion(emotion, scores) {
+                const labelEl = document.getElementById('emotionLabel');
+                const iconEl = document.getElementById('emotionIcon');
+                
+                if (labelEl) {
+                    labelEl.textContent = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+                }
+                if (iconEl) {
+                    iconEl.textContent = emotionIcons[emotion] || '😐';
+                }
+
+                emotions.forEach(emo => {
+                    const barEl = document.getElementById('bar-' + emo);
+                    
+                    if (barEl) {
+                        let score = scores[emo];
+                        if (typeof score !== 'number' || isNaN(score)) {
+                            score = 0;
+                        }
+                        
+                        score = Math.max(0, Math.min(1, score));
+                        const percentage = Math.round(score * 100);
+                        const colors = emotionColors[emo];
+                        
+                        barEl.style.width = percentage + '%';
+                        barEl.style.background = 'linear-gradient(90deg, ' + colors[0] + ', ' + colors[1] + ')';
+                        barEl.textContent = percentage + '%';
+                    }
+                });
+            }
+
+            function updateChart(timeline) {
+                if (!timeline || timeline.length === 0) return;
+                
+                try {
+                    const labels = timeline.map((_, index) => index);
+                    
+                    const emotionData = {
+                        happy: [],
+                        sad: [],
+                        angry: [],
+                        surprise: [],
+                        neutral: []
+                    };
+                    
+                    timeline.forEach(timepoint => {
+                        const scores = timepoint.scores || {};
+                        
+                        emotionData.happy.push(scores.happy || 0);
+                        emotionData.sad.push(scores.sad || 0);
+                        emotionData.angry.push(scores.angry || 0);
+                        emotionData.surprise.push(scores.surprise || 0);
+                        emotionData.neutral.push(scores.neutral || 0);
+                    });
+                    
+                    chart.data.labels = labels;
+                    chart.data.datasets[0].data = emotionData.happy;
+                    chart.data.datasets[1].data = emotionData.sad;
+                    chart.data.datasets[2].data = emotionData.angry;
+                    chart.data.datasets[3].data = emotionData.surprise;
+                    chart.data.datasets[4].data = emotionData.neutral;
+                    
+                    chart.update('none');
+                } catch (error) {
+                    console.error('Chart error:', error);
+                }
+            }
+
+            // FIXED: Define functions globally
+            window.sendCommand = function(action) {
+                console.log('Sending command:', action);
+                socket.emit('command', { action: action });
+            };
+
+            window.acceptSuggestion = function(word) {
+                console.log('Accepting suggestion:', word);
+                socket.emit('command', { action: 'accept_suggestion', word: word });
+            };
+
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'r') {
+                    e.preventDefault();
+                    sendCommand('reset');
+                }
+                else if (e.ctrlKey && e.key === 'Backspace') {
+                    e.preventDefault();
+                    sendCommand('backspace');
+                }
+                else if (['1', '2', '3'].includes(e.key)) {
+                    const sugItems = document.querySelectorAll('.suggestion-item');
+                    const idx = parseInt(e.key) - 1;
+                    if (sugItems[idx]) {
+                        sugItems[idx].click();
+                    }
+                }
+            });
+
+            console.log('✅ UI initialized successfully');
+        });
+    </script>
+</body>
+</html>
